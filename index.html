@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>布草与客房物资精细化管理 · 课堂实践</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  body {
+    font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;
+    background:#f0f2f5; color:#333; line-height:1.6; padding-bottom:40px;
+  }
+  .wrap { max-width:720px; margin:0 auto; padding:16px 14px; }
+  header { text-align:center; padding:22px 10px 6px; }
+  header h1 { font-size:20px; color:#1a5c8a; }
+  header p { font-size:13px; color:#888; margin-top:4px; }
+
+  /* 进度条 */
+  .steps { display:flex; justify-content:center; gap:8px; margin:14px 0 20px; }
+  .step { display:flex; align-items:center; gap:6px; background:#fff; border-radius:20px; padding:5px 12px; font-size:13px; color:#999; border:1px solid #e3e6ea; }
+  .step .dot { width:20px; height:20px; border-radius:50%; background:#dfe3e8; color:#999; font-size:12px; display:flex; align-items:center; justify-content:center; }
+  .step.active { color:#1a5c8a; border-color:#9fc8e8; font-weight:600; }
+  .step.active .dot { background:#1a5c8a; color:#fff; }
+  .step.done { color:#1e8e4e; }
+  .step.done .dot { background:#1e8e4e; color:#fff; }
+
+  /* 任务卡片 */
+  .card { background:#fff; border-radius:14px; padding:18px 16px; margin-bottom:16px; box-shadow:0 1px 4px rgba(0,0,0,.06); }
+  .card.locked { opacity:.55; }
+  .card.done { border:2px solid #b7e0c6; }
+  .card h2 { font-size:17px; display:flex; align-items:center; gap:8px; margin-bottom:4px; }
+  .card h2 .badge { font-size:12px; font-weight:normal; background:#eef3f8; color:#1a5c8a; padding:2px 8px; border-radius:10px; }
+  .card .desc { font-size:13px; color:#888; margin-bottom:12px; }
+  .locktip { font-size:14px; color:#999; text-align:center; padding:14px 0; }
+  .feedback { display:none; margin-top:12px; background:#e8f6ee; border:1px solid #b7e0c6; color:#1e8e4e; border-radius:10px; padding:10px 12px; font-size:14px; }
+  .feedback.show { display:block; }
+
+  video { width:100%; border-radius:10px; background:#000; display:block; }
+  textarea { width:100%; min-height:88px; border:1px solid #d8dde3; border-radius:10px; padding:10px; font-size:15px; resize:vertical; font-family:inherit; margin-top:12px; }
+  textarea:focus { outline:none; border-color:#1a5c8a; }
+  .btn { display:block; width:100%; margin-top:12px; padding:13px; border:none; border-radius:10px; background:#1a5c8a; color:#fff; font-size:16px; font-weight:600; }
+  .btn:active { opacity:.85; }
+  .btn.ghost { background:#fff; color:#1a5c8a; border:1.5px solid #1a5c8a; }
+  .hint { font-size:12px; color:#aaa; margin-top:6px; text-align:right; }
+  .err { color:#d84a3a; font-size:13px; margin-top:8px; display:none; }
+  .err.show { display:block; }
+
+  /* PPT 幻灯片横滑 */
+  .swiper { display:flex; overflow-x:auto; scroll-snap-type:x mandatory; border-radius:10px; background:#111; -webkit-overflow-scrolling:touch; }
+  .swiper img { width:100%; flex-shrink:0; scroll-snap-align:center; display:block; }
+  .pageno { text-align:center; font-size:12px; color:#999; margin-top:6px; }
+
+  /* 答题 */
+  .quiz { display:none; }
+  .quiz.show { display:block; }
+  .q { margin-top:16px; padding:12px; border:1px solid #e6e9ed; border-radius:10px; }
+  .q.wrong { border-color:#f0b1a8; background:#fdf3f1; }
+  .q p.qtitle { font-size:15px; font-weight:600; margin-bottom:8px; }
+  .opt { display:flex; align-items:flex-start; gap:8px; padding:9px 10px; border:1px solid #e6e9ed; border-radius:8px; margin-top:6px; font-size:14px; cursor:pointer; }
+  .opt input { margin-top:4px; }
+  .opt.sel { border-color:#1a5c8a; background:#f0f6fb; }
+  .q .ans { font-size:12px; margin-top:6px; display:none; }
+  .q.wrong .ans { display:block; color:#d84a3a; }
+
+  /* 图片点评 */
+  .imgitem { margin-top:16px; }
+  .imgitem .imgtitle { font-size:14px; font-weight:600; margin-bottom:6px; }
+  .imgitem img { width:100%; max-height:420px; object-fit:cover; border-radius:10px; display:block; cursor:zoom-in; }
+  .imgitem textarea { min-height:64px; margin-top:8px; }
+  .needmark { display:inline-block; margin-left:4px; }
+  .count { font-size:13px; color:#1a5c8a; font-weight:600; margin-top:14px; }
+  .feelbox { margin-top:16px; }
+  .feelbox label { display:block; font-size:14px; font-weight:600; margin-bottom:6px; color:#333; }
+  .feelbox textarea { min-height:90px; }
+
+  /* 完成 */
+  #final { display:none; }
+  #final.show { display:block; text-align:center; }
+  #final .party { font-size:44px; }
+  #final h3 { color:#1e8e4e; margin:6px 0; }
+  #final textarea { min-height:180px; text-align:left; font-size:13px; }
+  .foot { text-align:center; margin-top:26px; }
+  .foot button { background:none; border:none; color:#b5b5b5; font-size:12px; text-decoration:underline; }
+
+  /* 全屏看图 */
+  #overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.92); z-index:99; align-items:center; justify-content:center; }
+  #overlay.show { display:flex; }
+  #overlay img { max-width:100%; max-height:100%; object-fit:contain; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>布草与客房物资精细化管理</h1>
+    <p>综合服务技术 · 第3次课 课堂实践（三关闯关）</p>
+  </header>
+
+  <div class="steps">
+    <div class="step active" id="st1"><span class="dot">1</span>视频点评</div>
+    <div class="step" id="st2"><span class="dot">2</span>PPT学习</div>
+    <div class="step" id="st3"><span class="dot">3</span>图片点评</div>
+  </div>
+
+  <!-- 任务1 -->
+  <div class="card" id="card1">
+    <h2>任务一 · 视频欣赏点评 <span class="badge">清洁消毒流程</span></h2>
+    <p class="desc">请观看《客房清洁消毒流程（清消清）》视频，结合岗位实际写下你的欣赏点评（不少于20字）。</p>
+    <video id="vid" src="video/qingxiaoqing.mp4" controls playsinline preload="metadata"></video>
+    <textarea id="t1" placeholder="示例：视频完整展示了“清—消—清”三个环节……/操作规范性如何/哪些细节值得学习或需要注意……"></textarea>
+    <div class="err" id="e1">点评内容不能少于20个字，请认真完成哦～</div>
+    <button class="btn" onclick="submitT1()">提交点评，解锁任务二</button>
+    <div class="feedback" id="fb1">✅ 任务一完成！你对清消清流程的观察很用心。请继续学习任务二的课件，掌握布草与物资管理要点。</div>
+  </div>
+
+  <!-- 任务2 -->
+  <div class="card" id="card2">
+    <h2>任务二 · PPT学习与答题 <span class="badge">布草与物资管理</span></h2>
+    <p class="desc">左右滑动仔细学习课件（共10页），学完后点击按钮开始答题。5题全部答对方可过关。</p>
+    <div class="swiper" id="swiper">
+      <img src="slides/slide-01.png" alt="第1页"><img src="slides/slide-02.png" alt="第2页"><img src="slides/slide-03.png" alt="第3页"><img src="slides/slide-04.png" alt="第4页"><img src="slides/slide-05.png" alt="第5页"><img src="slides/slide-06.png" alt="第6页"><img src="slides/slide-07.png" alt="第7页"><img src="slides/slide-08.png" alt="第8页"><img src="slides/slide-09.png" alt="第9页"><img src="slides/slide-10.png" alt="第10页">
+    </div>
+    <div class="pageno" id="pageno">1 / 10</div>
+    <button class="btn ghost" id="startQuizBtn" onclick="showQuiz()">我已认真看完课件，开始答题</button>
+    <div class="quiz" id="quiz"></div>
+    <div class="err" id="e2">还有题目答错，请结合课件再试一次（不限次数）。</div>
+    <button class="btn" id="quizSubmit" style="display:none" onclick="submitQuiz()">提交答案</button>
+    <div class="feedback" id="fb2">✅ 任务二完成！答题全部正确，说明你已经掌握了布草“一客一换”、台账管理和成本管控的核心要点。进入最后关：实战图片点评！</div>
+  </div>
+
+  <!-- 任务3 -->
+  <div class="card" id="card3">
+    <h2>任务三 · 实习岗位图片点评 <span class="badge">任选3张</span></h2>
+    <p class="desc">以下12张图片来自实习岗位现场（物资货架、布草间、客房物资等）。请<b>任选其中3张</b>进行点评：摆放是否规范？分类是否清晰？有无改进空间？每张不少于10字。最后再写下不少于20字的总体感触心得。</p>
+    <div id="imgs"></div>
+    <div class="count" id="t3count"></div>
+    <div class="err" id="e3">请任选3张图片各写不少于10字的点评，并写下不少于20字的总体感触心得。</div>
+    <div class="feelbox">
+      <label>总体感触心得（不少于20字）：</label>
+      <textarea id="feel" placeholder="结合视频、课件与现场图片，写写你对精细化管理的总体感受与收获（不少于20字）" oninput="S.feel=this.value;save();chk3(false)"></textarea>
+    </div>
+    <button class="btn" onclick="submitT3()">提交点评与心得，完成闯关</button>
+    <div class="feedback" id="fb3">✅ 任务三完成！你能从现场图片中发现管理亮点与问题，并提炼出自己的感悟，这正是精细化管理眼光的体现。</div>
+  </div>
+
+  <!-- 完成页 -->
+  <div class="card" id="final">
+    <div class="party">🎉</div>
+    <h3>恭喜你完成全部三关任务！</h3>
+    <p style="font-size:14px;color:#666;">你的实践记录已汇总如下，请点击按钮复制全部内容，并发送给老师。</p>
+    <textarea id="summary" readonly></textarea>
+    <button class="btn" onclick="copySummary()">一键复制全部内容</button>
+    <p class="hint" id="copytip" style="text-align:center;color:#1e8e4e;display:none;">已复制，快去粘贴发给老师吧！</p>
+  </div>
+
+  <div class="foot"><button onclick="resetAll()">重置全部进度（重新开始）</button></div>
+</div>
+
+<div id="overlay" onclick="this.classList.remove('show')"><img id="bigimg" src=""></div>
+
+<script>
+var QUIZ = [
+  {q:"关于贴身布草（床单、被套、枕套）的更换标准，正确的是：",
+   o:["外观干净就可以不换","严格执行“一客一换”","每周统一更换一次","由客人自行决定"],a:1},
+  {q:"按照GB 37487-2019住宿业要求，长住客的贴身床品应：",
+   o:["每月更换一次","每3日至少更换一次，有污渍随时换","退房时才更换","外观干净就不用换"],a:1},
+  {q:"布草配比原则：按出租率峰值配置3套，分别是：",
+   o:["使用、洗涤、备用","客房、走廊、库房","白班、晚班、夜班","新品、旧品、报废"],a:0},
+  {q:"关于客房物资盘点频次，正确的是：",
+   o:["客耗品每月、布草每周盘点","客耗品每周、布草每月盘点","一年盘点一次即可","只在旺季盘点"],a:1},
+  {q:"客耗品库存管理坚持“先进先出”，主要目的是：",
+   o:["节省仓库空间","方便搬运","防止客耗品过期","减少记账工作量"],a:2}
+];
+
+var IMGS = [
+  {f:"images/01.jpg", t:"图1 · 物资货架"},
+  {f:"images/02.jpg", t:"图2 · 物资转运推车"},
+  {f:"images/03.png", t:"图3 · 布草柜"},
+  {f:"images/04.jpg", t:"图4 · 后勤库房操作台"},
+  {f:"images/05.jpg", t:"图5 · 巾类货架"},
+  {f:"images/06.jpg", t:"图6 · 净布草间"},
+  {f:"images/07.jpg", t:"图7 · 备品托盘"},
+  {f:"images/08.png", t:"图8 · 布草堆放区"},
+  {f:"images/09.jpg", t:"图9 · 分类存放货架"},
+  {f:"images/10.jpg", t:"图10 · 待处理布草箱"},
+  {f:"images/11.png", t:"图11 · 布草间货架"},
+  {f:"images/12.jpg", t:"图12 · 餐瓷具存放"}
+];
+
+var KEY = "bcbh_v1";
+var S = load();
+function load(){ try{ return JSON.parse(localStorage.getItem(KEY)) || {t1done:false,t1text:"",quizdone:false,quizShown:false,ans:{},t3done:false,t3:{},feel:""}; }catch(e){ return {t1done:false,t1text:"",quizdone:false,quizShown:false,ans:{},t3done:false,t3:{},feel:""}; } }
+function save(){ localStorage.setItem(KEY, JSON.stringify(S)); }
+
+/* ---------- 渲染答题 ---------- */
+function renderQuiz(){
+  var h = "";
+  QUIZ.forEach(function(item, qi){
+    h += '<div class="q" id="q'+qi+'"><p class="qtitle">'+(qi+1)+'. '+item.q+'</p>';
+    item.o.forEach(function(op, oi){
+      h += '<label class="opt" id="o'+qi+'_'+oi+'"><input type="radio" name="q'+qi+'" value="'+oi+'" onchange="pick('+qi+','+oi+')">'+op+'</label>';
+    });
+    h += '<p class="ans">本题回答有误，请结合课件第'+[3,3,4,7,7][qi]+'页再想一想～</p></div>';
+  });
+  document.getElementById("quiz").innerHTML = h;
+  // 恢复选择
+  QUIZ.forEach(function(item, qi){
+    if(S.ans[qi] !== undefined){
+      var el = document.querySelector('input[name="q'+qi+'"][value="'+S.ans[qi]+'"]');
+      if(el){ el.checked = true; document.getElementById("o"+qi+"_"+S.ans[qi]).classList.add("sel"); }
+    }
+  });
+}
+function pick(qi, oi){
+  S.ans[qi] = oi; save();
+  for(var i=0;i<QUIZ[qi].o.length;i++){ document.getElementById("o"+qi+"_"+i).classList.remove("sel"); }
+  document.getElementById("o"+qi+"_"+oi).classList.add("sel");
+}
+
+/* ---------- 渲染图片点评 ---------- */
+function renderImgs(){
+  var h = "";
+  IMGS.forEach(function(im, i){
+    h += '<div class="imgitem"><div class="imgtitle">'+im.t+'<span class="needmark" id="mark'+i+'"></span></div>'+
+         '<img src="'+im.f+'" loading="lazy" onclick="big(this.src)">'+
+         '<textarea id="ti'+i+'" placeholder="对这张图片的点评（不少于10字）" oninput="S.t3['+i+']=this.value;save();chk3(false)">'+(S.t3[i]||"")+'</textarea></div>';
+  });
+  document.getElementById("imgs").innerHTML = h;
+  var feelEl = document.getElementById("feel");
+  if(feelEl){ feelEl.value = S.feel || ""; }
+}
+function big(src){ document.getElementById("bigimg").src = src; document.getElementById("overlay").classList.add("show"); }
+
+/* ---------- 幻灯片页码 ---------- */
+document.getElementById("swiper").addEventListener("scroll", function(){
+  var p = Math.round(this.scrollLeft / this.clientWidth) + 1;
+  document.getElementById("pageno").textContent = Math.min(p,10) + " / 10";
+});
+
+/* ---------- 提交逻辑 ---------- */
+function submitT1(){
+  var t = document.getElementById("t1").value.trim();
+  if(t.length < 20){ document.getElementById("e1").classList.add("show"); return; }
+  document.getElementById("e1").classList.remove("show");
+  S.t1done = true; S.t1text = t; save(); refresh();
+  var c = document.getElementById("card1"); c.scrollIntoView({behavior:"smooth"});
+}
+function showQuiz(){
+  S.quizShown = true; save();
+  document.getElementById("quiz").classList.add("show");
+  document.getElementById("quizSubmit").style.display = "block";
+  document.getElementById("startQuizBtn").style.display = "none";
+  document.getElementById("quiz").scrollIntoView({behavior:"smooth"});
+}
+function submitQuiz(){
+  var allOk = true;
+  QUIZ.forEach(function(item, qi){
+    var ok = S.ans[qi] === item.a;
+    document.getElementById("q"+qi).classList.toggle("wrong", !ok);
+    if(!ok) allOk = false;
+  });
+  document.getElementById("e2").classList.toggle("show", !allOk);
+  if(allOk){ S.quizdone = true; save(); refresh(); document.getElementById("card2").scrollIntoView({behavior:"smooth"}); }
+}
+function chk3(show){
+  var cnt = 0;
+  for(var i=0;i<IMGS.length;i++){
+    var v = (S.t3[i]||"").trim();
+    var good = v.length >= 10;
+    if(show) document.getElementById("mark"+i).textContent = good ? "✅" : "⬜";
+    if(good) cnt++;
+  }
+  var feel = (S.feel||"").trim();
+  var feelOk = feel.length >= 20;
+  var ok = cnt >= 3 && feelOk;
+  var cEl = document.getElementById("t3count");
+  if(cEl){ cEl.textContent = "已点评 " + cnt + " / 3 张" + (feelOk ? "　·　心得已填写 ✅" : "　·　心得待填写"); }
+  return ok;
+}
+function submitT3(){
+  if(!chk3(true)){ document.getElementById("e3").classList.add("show"); return; }
+  document.getElementById("e3").classList.remove("show");
+  S.t3done = true; save(); refresh(); buildSummary();
+  document.getElementById("final").scrollIntoView({behavior:"smooth"});
+}
+function copySummary(){
+  var ta = document.getElementById("summary");
+  ta.removeAttribute("readonly"); ta.select(); ta.setSelectionRange(0, 999999);
+  try{ document.execCommand("copy"); }catch(e){}
+  if(navigator.clipboard){ navigator.clipboard.writeText(ta.value).catch(function(){}); }
+  ta.setAttribute("readonly","readonly"); window.getSelection().removeAllRanges(); ta.blur();
+  document.getElementById("copytip").style.display = "block";
+  setTimeout(function(){ document.getElementById("copytip").style.display = "none"; }, 3000);
+}
+function buildSummary(){
+  var s = "【布草与客房物资精细化管理 · 课堂实践记录】\n\n一、视频欣赏点评（清消清流程）：\n" + S.t1text + "\n\n二、PPT学习答题：5题全部答对 ✅\n\n三、实习岗位图片点评（任选3张）：\n";
+  var any = false;
+  IMGS.forEach(function(im, i){
+    var v = (S.t3[i]||"").trim();
+    if(v.length >= 10){ s += im.t + "：" + v + "\n"; any = true; }
+  });
+  if(!any){ s += "（未提交图片点评）\n"; }
+  s += "\n四、总体感触心得：\n" + (S.feel||"").trim() + "\n";
+  document.getElementById("summary").value = s;
+}
+
+/* ---------- 状态刷新 ---------- */
+function refresh(){
+  var st1=document.getElementById("st1"), st2=document.getElementById("st2"), st3=document.getElementById("st3");
+  var S1 = load;
+  function setStep(el, state, n){ el.className = "step " + state; el.querySelector(".dot").textContent = state==="done" ? "✓" : n; }
+  setStep(st1, S.t1done ? "done" : "active", 1);
+  setStep(st2, S.quizdone ? "done" : (S.t1done ? "active" : ""), 2);
+  setStep(st3, S.t3done ? "done" : (S.quizdone ? "active" : ""), 3);
+
+  var c1=document.getElementById("card1"), c2=document.getElementById("card2"), c3=document.getElementById("card3");
+  c1.className = "card" + (S.t1done ? " done" : "");
+  document.getElementById("fb1").classList.toggle("show", S.t1done);
+  if(S.t1done){
+    var t1=document.getElementById("t1"); t1.value=S.t1text; t1.readOnly=true; t1.style.background="#f7f9fa";
+    c1.querySelector(".btn").style.display="none";
+  }
+  // 清理残留锁定提示
+  c2.querySelectorAll(".locktip").forEach(function(el){ el.remove(); });
+  c3.querySelectorAll(".locktip").forEach(function(el){ el.remove(); });
+
+  var quizEl=document.getElementById("quiz"), qBtn=document.getElementById("startQuizBtn"), qSubmit=document.getElementById("quizSubmit");
+  if(!S.t1done){
+    c2.className = "card locked";
+    quizEl.classList.remove("show"); qBtn.style.display="none"; qSubmit.style.display="none";
+    c2.insertAdjacentHTML("beforeend", '<p class="locktip">🔒 完成【任务一 · 视频点评】后解锁</p>');
+  } else {
+    c2.className = "card" + (S.quizdone ? " done" : "");
+    document.getElementById("fb2").classList.toggle("show", S.quizdone);
+    document.getElementById("e2").classList.toggle("show", false);
+    if(S.quizdone){
+      quizEl.classList.add("show");
+      qBtn.style.display="none"; qSubmit.style.display="none";
+      QUIZ.forEach(function(item,qi){ document.getElementById("q"+qi).classList.toggle("wrong", false); });
+    } else {
+      qBtn.style.display = S.quizShown ? "none" : "block";
+      quizEl.classList.toggle("show", !!S.quizShown);
+      qSubmit.style.display = S.quizShown ? "block" : "none";
+    }
+  }
+  if(!S.quizdone){
+    c3.className = "card locked";
+    c3.querySelectorAll("textarea,.btn,.feelbox,.count").forEach(function(el){ el.style.display="none"; });
+    c3.insertAdjacentHTML("beforeend", '<p class="locktip">🔒 完成【任务二 · PPT学习答题】后解锁</p>');
+  } else {
+    c3.className = "card" + (S.t3done ? " done" : "");
+    document.getElementById("fb3").classList.toggle("show", S.t3done);
+    c3.querySelectorAll("textarea").forEach(function(el){ el.style.display = S.t3done ? "none" : "block"; });
+    c3.querySelector(".feelbox").style.display = S.t3done ? "none" : "block";
+    c3.querySelector(".count").style.display = S.t3done ? "none" : "block";
+    c3.querySelector(".btn").style.display = S.t3done ? "none" : "block";
+    document.getElementById("e3").classList.toggle("show", false);
+    if(S.t3done){ chk3(true); } else { chk3(false); }
+  }
+  if(S.t3done){
+    document.getElementById("final").classList.add("show");
+    buildSummary();
+  }
+}
+function resetAll(){
+  if(!confirm("确定要重置全部进度，重新开始吗？")) return;
+  localStorage.removeItem(KEY);
+  location.reload();
+}
+
+renderQuiz();
+renderImgs();
+refresh();
+</script>
+</body>
+</html>
