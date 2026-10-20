@@ -38,8 +38,6 @@
   video { width:100%; border-radius:10px; background:#000; display:block; }
   textarea { width:100%; min-height:88px; border:1px solid #d8dde3; border-radius:10px; padding:10px; font-size:15px; resize:vertical; font-family:inherit; margin-top:12px; }
   textarea:focus { outline:none; border-color:#1a5c8a; }
-  input.nameinput { width:100%; max-width:320px; padding:10px 12px; border:1px solid #d8dde3; border-radius:10px; font-size:15px; margin-top:12px; text-align:center; box-sizing:border-box; }
-  input.nameinput:focus { outline:none; border-color:#1a5c8a; }
   .btn { display:block; width:100%; margin-top:12px; padding:13px; border:none; border-radius:10px; background:#1a5c8a; color:#fff; font-size:16px; font-weight:600; }
   .btn:active { opacity:.85; }
   .btn.ghost { background:#fff; color:#1a5c8a; border:1.5px solid #1a5c8a; }
@@ -148,10 +146,7 @@
   <div class="card" id="final">
     <div class="party">🎉</div>
     <h3>恭喜你完成全部三关任务！</h3>
-    <p style="font-size:14px;color:#666;">请填写姓名/学号，再把实践记录一键提交给老师（也可一键复制自行发送）。</p>
-    <input id="stuname" class="nameinput" placeholder="你的姓名 / 学号" oninput="S.name=this.value;save();">
-    <button class="btn" id="submitBtn" onclick="submitToTeacher()">提交给老师</button>
-    <p class="hint" id="submittip" style="text-align:center;display:none;"></p>
+    <p style="font-size:14px;color:#666;">你的实践记录已汇总如下，请点击按钮复制全部内容，并发送给老师。</p>
     <textarea id="summary" readonly></textarea>
     <button class="btn" onclick="copySummary()">一键复制全部内容</button>
     <p class="hint" id="copytip" style="text-align:center;color:#1e8e4e;display:none;">已复制，快去粘贴发给老师吧！</p>
@@ -192,10 +187,8 @@ var IMGS = [
 ];
 
 var KEY = "bcbh_v1";
-// 免服务器收集服务端点（老师创建 Formspree 表单后填入，详见说明）
-var COLLECT_URL = "https://formspree.io/f/your_form_id";
 var S = load();
-function load(){ try{ return JSON.parse(localStorage.getItem(KEY)) || {t1done:false,t1text:"",quizdone:false,quizShown:false,ans:{},t3done:false,t3:{},feel:"",name:"",submitted:false}; }catch(e){ return {t1done:false,t1text:"",quizdone:false,quizShown:false,ans:{},t3done:false,t3:{},feel:"",name:"",submitted:false}; } }
+function load(){ try{ return JSON.parse(localStorage.getItem(KEY)) || {t1done:false,t1text:"",quizdone:false,quizShown:false,ans:{},t3done:false,t3:{},feel:""}; }catch(e){ return {t1done:false,t1text:"",quizdone:false,quizShown:false,ans:{},t3done:false,t3:{},feel:""}; } }
 function save(){ localStorage.setItem(KEY, JSON.stringify(S)); }
 
 /* ---------- 渲染答题 ---------- */
@@ -298,29 +291,8 @@ function copySummary(){
   document.getElementById("copytip").style.display = "block";
   setTimeout(function(){ document.getElementById("copytip").style.display = "none"; }, 3000);
 }
-function submitToTeacher(){
-  var name = (S.name||"").trim();
-  if(!name){ alert("请先填写姓名 / 学号，方便老师识别你的作业～"); document.getElementById("stuname").focus(); return; }
-  if(!COLLECT_URL || COLLECT_URL.indexOf("your_form_id") >= 0){
-    var t = document.getElementById("submittip"); t.style.color = "#c0392b";
-    t.textContent = "老师尚未开启在线提交，请点下方「一键复制」把内容发给老师。"; t.style.display = "block";
-    copySummary(); return;
-  }
-  buildSummary();
-  var content = document.getElementById("summary").value;
-  var btn = document.getElementById("submitBtn");
-  var tip = document.getElementById("submittip");
-  btn.disabled = true; btn.textContent = "提交中…"; tip.style.display = "none";
-  fetch(COLLECT_URL, {
-    method:"POST",
-    headers:{"Content-Type":"application/json","Accept":"application/json"},
-    body: JSON.stringify({ name: name, content: content, time: new Date().toISOString() })
-  }).then(function(r){ return r.ok ? r : Promise.reject(new Error("HTTP "+r.status)); })
-    .then(function(){ S.submitted = true; save(); btn.textContent = "✅ 已提交给老师"; tip.style.color = "#1e8e4e"; tip.textContent = "提交成功！老师已收到你的实践记录。"; tip.style.display = "block"; })
-    .catch(function(){ btn.disabled = false; btn.textContent = "重新提交给老师"; tip.style.color = "#c0392b"; tip.textContent = "自动提交失败（可能是网络问题），请点下方「一键复制」手动发给老师。"; tip.style.display = "block"; });
-}
 function buildSummary(){
-  var s = "【布草与客房物资精细化管理 · 课堂实践记录】\n提交人：" + ((S.name||"").trim() || "（未填姓名）") + "\n\n一、视频欣赏点评（清消清流程）：\n" + S.t1text + "\n\n二、PPT学习答题：5题全部答对 ✅\n\n三、实习岗位图片点评（任选3张）：\n";
+  var s = "【布草与客房物资精细化管理 · 课堂实践记录】\n\n一、视频欣赏点评（清消清流程）：\n" + S.t1text + "\n\n二、PPT学习答题：5题全部答对 ✅\n\n三、实习岗位图片点评（任选3张）：\n";
   var any = false;
   IMGS.forEach(function(im, i){
     var v = (S.t3[i]||"").trim();
@@ -386,11 +358,6 @@ function refresh(){
   }
   if(S.t3done){
     document.getElementById("final").classList.add("show");
-    document.getElementById("stuname").value = S.name || "";
-    if(S.submitted){
-      var b=document.getElementById("submitBtn"); b.textContent="✅ 已提交给老师"; b.disabled=true;
-      var t=document.getElementById("submittip"); t.style.color="#1e8e4e"; t.textContent="提交成功！老师已收到你的实践记录。"; t.style.display="block";
-    }
     buildSummary();
   }
 }
